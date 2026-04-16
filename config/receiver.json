@@ -1,0 +1,13 @@
+{
+  "device_name": "Windows Receiver",
+  "input_device_index": null,
+  "protocol_id": 4,
+  "command_execution_enabled": false,
+  "allowed_commands": [
+    "CALC",
+    "LOCK",
+    "NOTEPAD"
+  ],
+  "receiver_private_key": "wPhCayFsQLlg35eQdhJBGnXj_zbR3uQBCS3oSYNyWkg=",
+  "receiver_public_key": "TgwosUy7ZQz3HBAOyh4CEHXsE7F3NQYMIGxecWpKqlY="
+}

@@ -1,0 +1,8 @@
+ggwave
+pyaudio
+numpy
+customtkinter
+cryptography
+reedsolo
+scipy
+

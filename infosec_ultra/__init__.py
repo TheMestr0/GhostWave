@@ -1,0 +1,2 @@
+"""InfoSec Ultrasonic application package."""
+
