@@ -1,6 +1,7 @@
 {
   "device_name": "Windows Sender",
-  "receiver_public_key": "8M9JdLL_wVaGXZ1nwNTAjKClikCLxMRULB58h4_4R0E=",
+  "receiver_public_key": "TgwosUy7ZQz3HBAOyh4CEHXsE7F3NQYMIGxecWpKqlY=",
   "protocol_id": 4,
-  "output_volume": 100
+  "output_volume": 100,
+  "output_device_index": null
 }

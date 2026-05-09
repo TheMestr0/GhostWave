@@ -18,6 +18,9 @@ from .protocol_codec import PROTOCOL_VERSION, ProtocolCodec
 from .settings import ReceiverSettings, SenderSettings
 
 ProgressCallback = Callable[[str, str], None]
+HANDSHAKE_REPETITIONS = 2
+HANDSHAKE_RETRY_DELAY_SECONDS = 0.35
+DATA_WAITING_TTL_SECONDS = 10.0
 
 
 def _event(event_type: str, **payload: object) -> dict:
@@ -29,10 +32,7 @@ class SenderService:
     def __init__(self, settings: SenderSettings, transmitter: AudioTransmitter | None = None):
         self.settings = settings
         self.codec = ProtocolCodec()
-        self.transmitter = transmitter or AudioTransmitter(
-            protocol_id=settings.protocol_id,
-            volume=settings.output_volume,
-        )
+        self._fixed_transmitter = transmitter  # only set in tests
 
     def send(
         self,
@@ -49,6 +49,11 @@ class SenderService:
         if not receiver_public_key.strip():
             raise SettingsError("Receiver public key is required.")
 
+        transmitter = self._fixed_transmitter or AudioTransmitter(
+            protocol_id=self.settings.protocol_id,
+            volume=self.settings.output_volume,
+            output_device_index=self.settings.output_device_index,
+        )
         session_id = generate_session_id()
         sender_private_key, sender_public_key = generate_x25519_keypair()
         nonce = generate_nonce()
@@ -66,12 +71,17 @@ class SenderService:
             }
         )
 
+        retry_delay = 0.0 if self._fixed_transmitter is not None else HANDSHAKE_RETRY_DELAY_SECONDS
         self._emit(progress, "encoding", "Encoding hello frame.")
-        self.transmitter.send_bytes(hello_frame)
+        for attempt in range(HANDSHAKE_REPETITIONS):
+            transmitter.send_bytes(hello_frame)
+            if attempt + 1 < HANDSHAKE_REPETITIONS and retry_delay:
+                time.sleep(retry_delay)
         self._emit(progress, "encrypting", "Encrypting payload.")
-        time.sleep(0.35)
+        if retry_delay:
+            time.sleep(retry_delay)
         self._emit(progress, "transmitting", "Transmitting data frame.")
-        self.transmitter.send_bytes(data_frame)
+        transmitter.send_bytes(data_frame)
         self._emit(progress, "done", f"Transmission finished for session {session_id}.")
         return session_id
 
@@ -90,6 +100,7 @@ class ReceiverService:
             allowed_commands=settings.allowed_commands,
         )
         self.sessions: dict[str, dict] = {}
+        self.pending_data_frames: dict[str, list[tuple[float, dict]]] = {}
 
     def update_command_policy(self, enabled: bool, allowed_commands: list[str]) -> None:
         self.settings.command_execution_enabled = enabled
@@ -98,13 +109,18 @@ class ReceiverService:
         self.command_policy.set_allowed_commands(allowed_commands)
 
     def process_packet(self, packet: bytes) -> list[dict]:
+        self._drop_stale_pending_data()
         try:
             frame = self.codec.decode_frame(packet)
         except ProtocolError as exc:
             return [_event("error", code="invalid_packet", message=str(exc))]
 
         if frame["t"] == "hello":
-            return [self._handle_hello(frame)]
+            hello_event = self._handle_hello(frame)
+            events = [hello_event]
+            if hello_event["type"] == "session_ready":
+                events.extend(self._process_pending_data(frame["sid"]))
+            return events
         if frame["t"] == "data":
             return [self._handle_data(frame)]
         return [_event("error", code="unsupported_packet", message="Unsupported packet type.")]
@@ -136,12 +152,23 @@ class ReceiverService:
     def _handle_data(self, frame: dict) -> dict:
         session = self.sessions.get(frame["sid"])
         if not session:
-            return _event("error", code="invalid_handshake", message="Unknown session id.")
+            self.pending_data_frames.setdefault(frame["sid"], []).append((time.time(), frame))
+            return _event(
+                "waiting_for_handshake",
+                code="waiting_for_handshake",
+                session_id=frame["sid"],
+                message="Data arrived before the session handshake; waiting for hello packet.",
+            )
 
         try:
             payload = decrypt_payload(frame["ct"], session["session_key"])
         except CryptoError as exc:
-            return _event("error", code="decrypt_failed", message=str(exc), session_id=frame["sid"])
+            return _event(
+                "error",
+                code="decrypt_failed",
+                message=f"{exc} Check that the Sender receiver public key matches this Receiver key.",
+                session_id=frame["sid"],
+            )
 
         kind = payload.get("kind")
         body = payload.get("body")
@@ -176,6 +203,23 @@ class ReceiverService:
             body=pending.command_name,
             created_at=pending.created_at,
         )
+
+    def _process_pending_data(self, session_id: str) -> list[dict]:
+        pending_frames = self.pending_data_frames.pop(session_id, [])
+        return [self._handle_data(frame) for _, frame in pending_frames]
+
+    def _drop_stale_pending_data(self) -> None:
+        now = time.time()
+        for session_id in list(self.pending_data_frames):
+            fresh_frames = [
+                item
+                for item in self.pending_data_frames[session_id]
+                if now - item[0] <= DATA_WAITING_TTL_SECONDS
+            ]
+            if fresh_frames:
+                self.pending_data_frames[session_id] = fresh_frames
+            else:
+                del self.pending_data_frames[session_id]
 
     def approve_command(self, command_id: str) -> dict:
         try:

@@ -29,31 +29,38 @@ class MessageFlowTests(unittest.TestCase):
         self.receiver_service = ReceiverService(self.receiver_settings)
         self.codec = ProtocolCodec()
 
+    def _process_transmission(self) -> list[dict]:
+        events: list[dict] = []
+        for packet in self.fake_transmitter.frames:
+            events.extend(self.receiver_service.process_packet(packet))
+        return events
+
     def test_text_message_round_trip_without_audio(self) -> None:
         self.sender_service.send("text", "hello secure world", self.receiver_public)
 
-        hello_events = self.receiver_service.process_packet(self.fake_transmitter.frames[0])
-        message_events = self.receiver_service.process_packet(self.fake_transmitter.frames[1])
+        events = self._process_transmission()
 
-        self.assertEqual("session_ready", hello_events[0]["type"])
-        self.assertEqual("message_received", message_events[0]["type"])
+        message_events = [event for event in events if event["type"] == "message_received"]
+        self.assertTrue(any(event["type"] == "session_ready" for event in events))
+        self.assertEqual(1, len(message_events))
         self.assertEqual("hello secure world", message_events[0]["body"])
 
     def test_command_packet_becomes_pending_and_does_not_auto_run(self) -> None:
         self.sender_service.send("command", "CALC", self.receiver_public)
 
-        self.receiver_service.process_packet(self.fake_transmitter.frames[0])
-        command_events = self.receiver_service.process_packet(self.fake_transmitter.frames[1])
+        events = self._process_transmission()
 
-        self.assertEqual("command_pending", command_events[0]["type"])
+        command_events = [event for event in events if event["type"] == "command_pending"]
+        self.assertEqual(1, len(command_events))
         self.assertEqual("CALC", command_events[0]["body"])
         self.assertEqual(1, len(self.receiver_service.command_policy.pending_commands()))
 
     def test_corrupted_payload_returns_decrypt_error(self) -> None:
         self.sender_service.send("text", "hello secure world", self.receiver_public)
 
-        self.receiver_service.process_packet(self.fake_transmitter.frames[0])
-        data_frame = self.codec.decode_frame(self.fake_transmitter.frames[1])
+        for packet in self.fake_transmitter.frames[:-1]:
+            self.receiver_service.process_packet(packet)
+        data_frame = self.codec.decode_frame(self.fake_transmitter.frames[-1])
         data_frame["ct"] = data_frame["ct"][:-2] + "ab"
         corrupted_packet = self.codec.encode_frame(data_frame)
 
@@ -61,7 +68,18 @@ class MessageFlowTests(unittest.TestCase):
         self.assertEqual("error", event["type"])
         self.assertEqual("decrypt_failed", event["code"])
 
+    def test_data_packet_waits_for_late_handshake(self) -> None:
+        self.sender_service.send("text", "hello secure world", self.receiver_public)
+
+        waiting_events = self.receiver_service.process_packet(self.fake_transmitter.frames[-1])
+        late_handshake_events = self.receiver_service.process_packet(self.fake_transmitter.frames[0])
+
+        self.assertEqual("waiting_for_handshake", waiting_events[0]["type"])
+        self.assertTrue(any(event["type"] == "session_ready" for event in late_handshake_events))
+        message_events = [event for event in late_handshake_events if event["type"] == "message_received"]
+        self.assertEqual(1, len(message_events))
+        self.assertEqual("hello secure world", message_events[0]["body"])
+
 
 if __name__ == "__main__":
     unittest.main()
-

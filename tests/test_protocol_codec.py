@@ -31,9 +31,26 @@ class ProtocolCodecTests(unittest.TestCase):
             self.codec.encode_frame({"v": 2, "t": "hello", "sid": "1", "spk": "a", "nonce": "b"})
 
     def test_rejects_malformed_json(self) -> None:
-        malformed = bytes(self.codec.rs.encode(b"not-json"))
+        rs_block = bytes(self.codec.rs.encode(b"not-json"))
+        # Prepend length prefix so decode_frame can extract the RS block
+        prefixed = len(rs_block).to_bytes(2, "big") + rs_block
         with self.assertRaises(ProtocolError):
-            self.codec.decode_frame(malformed)
+            self.codec.decode_frame(prefixed)
+
+    def test_decode_survives_trailing_garbage(self) -> None:
+        """ggwave's decode buffer is often larger than the payload."""
+        import os
+        frame = {
+            "v": PROTOCOL_VERSION,
+            "t": "hello",
+            "sid": "abc123",
+            "spk": "sender-public-key",
+            "nonce": "nonce-value",
+        }
+        encoded = self.codec.encode_frame(frame)
+        padded = encoded + os.urandom(50)
+        decoded = self.codec.decode_frame(padded)
+        self.assertEqual(frame, decoded)
 
 
 if __name__ == "__main__":

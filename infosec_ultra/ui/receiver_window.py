@@ -24,7 +24,12 @@ class ReceiverWindow(ctk.CTk):
         self.stop_event = threading.Event()
         self.listener_thread: threading.Thread | None = None
         self.pending_cards: dict[str, ctk.CTkFrame] = {}
-        self.input_devices = list_input_devices()
+
+        # Bug #5 fix: guard against device enumeration failure
+        try:
+            self.input_devices = list_input_devices()
+        except Exception:
+            self.input_devices = []
 
         self.title("InfoSec Ultrasonic Receiver")
         self.geometry("1160x700")
@@ -32,6 +37,10 @@ class ReceiverWindow(ctk.CTk):
 
         self.status_var = ctk.StringVar(value="Idle")
         self.command_mode_var = ctk.BooleanVar(value=self.settings.command_execution_enabled)
+        self.received_count = 0
+        self.received_count_var = ctk.StringVar(value="Messages received: 0")
+
+        # Bug #1 fix: self.input_devices is already set above before StringVar uses it
         self.device_var = ctk.StringVar(value=self._current_device_label())
         self.fingerprint_var = ctk.StringVar(value=f"Receiver Key: {key_fingerprint(self.settings.receiver_public_key)}")
 
@@ -67,16 +76,34 @@ class ReceiverWindow(ctk.CTk):
         left = ctk.CTkFrame(self, corner_radius=16)
         left.grid(row=1, column=0, sticky="nsew", padx=(18, 9), pady=(0, 18))
         left.grid_rowconfigure(1, weight=1)
+        left.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(left, text="Activity Log", font=("Segoe UI", 18, "bold")).grid(
-            row=0, column=0, sticky="w", padx=18, pady=(18, 8)
+        log_header = ctk.CTkFrame(left, fg_color="transparent")
+        log_header.grid(row=0, column=0, sticky="ew", padx=18, pady=(18, 8))
+        log_header.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(log_header, text="Activity Log", font=("Segoe UI", 18, "bold")).grid(
+            row=0, column=0, sticky="w"
         )
+        ctk.CTkLabel(log_header, textvariable=self.received_count_var, text_color="#9fc5ff").grid(
+            row=0, column=1, sticky="e", padx=(8, 0)
+        )
+        ctk.CTkButton(
+            log_header,
+            text="Clear",
+            width=70,
+            height=28,
+            fg_color="#2b2d42",
+            hover_color="#3a3c54",
+            command=self._clear_log,
+        ).grid(row=0, column=2, sticky="e", padx=(8, 0))
+
         self.log_box = ctk.CTkTextbox(left, state="disabled")
         self.log_box.grid(row=1, column=0, sticky="nsew", padx=18, pady=(0, 18))
 
         right = ctk.CTkFrame(self, corner_radius=16)
         right.grid(row=1, column=1, sticky="nsew", padx=(9, 18), pady=(0, 18))
         right.grid_rowconfigure(3, weight=1)
+        right.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(right, text="Settings", font=("Segoe UI", 18, "bold")).grid(
             row=0, column=0, sticky="w", padx=18, pady=(18, 8)
@@ -172,7 +199,10 @@ class ReceiverWindow(ctk.CTk):
     def stop_listening(self) -> None:
         if self.listener_thread and self.listener_thread.is_alive():
             self.stop_event.set()
-            self.listener_thread.join(timeout=1.5)
+            # Bug #3 fix: increased timeout and log a warning if the thread doesn't finish cleanly
+            self.listener_thread.join(timeout=3.0)
+            if self.listener_thread.is_alive():
+                self._append_log("Warning: audio thread did not stop cleanly.")
         self.status_var.set("Idle")
         self.listen_button.configure(text="Start Listening")
         self._style_status_badge()
@@ -197,6 +227,8 @@ class ReceiverWindow(ctk.CTk):
                 self._append_log(f"{event['message']} [{event['sender_fingerprint']}]")
             elif event["type"] == "message_received":
                 self.status_var.set("Session Ready")
+                self.received_count += 1
+                self.received_count_var.set(f"Messages received: {self.received_count}")
                 self._append_log(f"Message: {event['body']}")
             elif event["type"] == "command_pending":
                 self.status_var.set("Session Ready")
@@ -205,6 +237,9 @@ class ReceiverWindow(ctk.CTk):
             elif event["type"] == "command_blocked":
                 self.status_var.set("Listening")
                 self._append_log(f"Command blocked: {event['body']} ({event['message']})")
+            elif event["type"] == "waiting_for_handshake":
+                self.status_var.set("Listening")
+                self._append_log(event["message"])
             elif event["type"] == "command_executed":
                 self._append_log(f"Executed command: {event['body']}")
                 self._remove_pending_card(event["command_id"])
@@ -257,6 +292,11 @@ class ReceiverWindow(ctk.CTk):
     def _reject_command(self, command_id: str) -> None:
         self.ui_events.put(self.service.reject_command(command_id))
 
+    def _clear_log(self) -> None:
+        self.log_box.configure(state="normal")
+        self.log_box.delete("1.0", "end")
+        self.log_box.configure(state="disabled")
+
     def _style_status_badge(self) -> None:
         state = self.status_var.get().lower()
         if state == "listening":
@@ -288,4 +328,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

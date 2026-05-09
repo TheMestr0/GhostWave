@@ -7,19 +7,37 @@ from .errors import ProtocolError
 PROTOCOL_VERSION = 1
 FRAME_TYPES = {"hello", "data"}
 
+# 2-byte big-endian length prefix so the receiver knows exactly how many
+# bytes belong to the RS block, regardless of ggwave's buffer padding.
+_LENGTH_PREFIX_SIZE = 2
+
 
 class ProtocolCodec:
-    def __init__(self, parity_bytes: int = 8):
+    def __init__(self, parity_bytes: int = 20):
         self.rs = RSCodec(parity_bytes)
 
     def encode_frame(self, frame: dict) -> bytes:
         self._validate_frame(frame)
         raw = json.dumps(frame, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
-        return bytes(self.rs.encode(raw))
+        rs_block = bytes(self.rs.encode(raw))
+        # Prepend a 2-byte big-endian length so the receiver can slice off
+        # any trailing garbage that ggwave appends to its decode buffer.
+        return len(rs_block).to_bytes(_LENGTH_PREFIX_SIZE, "big") + rs_block
 
     def decode_frame(self, packet: bytes) -> dict:
+        if len(packet) < _LENGTH_PREFIX_SIZE:
+            raise ProtocolError("Packet too short.")
+
+        expected_len = int.from_bytes(packet[:_LENGTH_PREFIX_SIZE], "big")
+        rs_block = packet[_LENGTH_PREFIX_SIZE : _LENGTH_PREFIX_SIZE + expected_len]
+
+        if len(rs_block) < expected_len:
+            raise ProtocolError(
+                f"Packet truncated: expected {expected_len} bytes, got {len(rs_block)}."
+            )
+
         try:
-            raw = self.rs.decode(packet)[0]
+            raw = self.rs.decode(rs_block)[0]
         except ReedSolomonError as exc:
             raise ProtocolError("Frame failed error correction.") from exc
 
@@ -54,4 +72,3 @@ class ProtocolCodec:
         if frame_type == "data":
             if not isinstance(frame.get("ct"), str) or not frame["ct"]:
                 raise ProtocolError("Invalid data packet.")
-

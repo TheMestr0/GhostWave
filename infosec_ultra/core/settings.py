@@ -39,6 +39,7 @@ class SenderSettings:
     receiver_public_key: str = ""
     protocol_id: int = 4
     output_volume: int = 100
+    output_device_index: int | None = None
 
 
 @dataclass
@@ -88,6 +89,7 @@ def load_sender_settings(paths: SettingsPaths = DEFAULT_SETTINGS_PATHS) -> Sende
         receiver_public_key=data.get("receiver_public_key", ""),
         protocol_id=int(data.get("protocol_id", 4)),
         output_volume=int(data.get("output_volume", 100)),
+        output_device_index=data.get("output_device_index"),
     )
 
 
