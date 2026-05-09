@@ -1,2 +1,1 @@
-"""InfoSec Ultrasonic application package."""
-
+"""GhostWave application package."""

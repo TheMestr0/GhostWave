@@ -1,6 +1,6 @@
-# InfoSec - Ultrasonic Secure Message Transfer
+# GhostWave: Secure Ultrasonic Message Transfer
 
-InfoSec is a Windows-first desktop demo for sending encrypted text messages or allowlisted commands between devices using ultrasonic audio. The project uses `customtkinter` for the desktop UI and a shared application core for audio transport, protocol framing, cryptography, settings management, and command approval.
+GhostWave is a Windows-first desktop demo for sending encrypted text messages or allowlisted commands between devices using ultrasonic audio. The project uses `customtkinter` for the desktop UI and a shared application core for audio transport, protocol framing, cryptography, settings management, and command approval.
 
 ## Quick Start
 
@@ -30,7 +30,7 @@ That command opens the launcher window. From the launcher you can choose:
 ## Project Structure
 
 ```text
-InfoSec/
+GhostWave/
 |-- config/
 |   |-- receiver.json
 |   `-- sender.json

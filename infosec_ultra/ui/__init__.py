@@ -1,2 +1,1 @@
-"""UI windows for InfoSec Ultrasonic."""
-
+"""UI windows for GhostWave."""

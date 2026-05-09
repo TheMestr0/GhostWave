@@ -31,7 +31,7 @@ class ReceiverWindow(ctk.CTk):
         except Exception:
             self.input_devices = []
 
-        self.title("InfoSec Ultrasonic Receiver")
+        self.title("GhostWave Receiver")
         self.geometry("1160x700")
         self.minsize(980, 620)
 
@@ -57,7 +57,7 @@ class ReceiverWindow(ctk.CTk):
         header = ctk.CTkFrame(self, corner_radius=16)
         header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=18, pady=(18, 12))
         header.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(header, text="InfoSec Ultrasonic Receiver", font=("Segoe UI", 28, "bold")).grid(
+        ctk.CTkLabel(header, text="GhostWave Receiver", font=("Segoe UI", 28, "bold")).grid(
             row=0, column=0, sticky="w", padx=18, pady=(16, 4)
         )
         ctk.CTkLabel(header, textvariable=self.fingerprint_var, text_color="#b7c1d1").grid(

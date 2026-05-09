@@ -32,7 +32,7 @@ class SenderWindow(ctk.CTk):
         except Exception:
             self.output_devices = []
 
-        self.title("InfoSec Ultrasonic Sender")
+        self.title("GhostWave Sender")
         self.geometry("1020x720")
         self.minsize(900, 620)
 
@@ -79,7 +79,7 @@ class SenderWindow(ctk.CTk):
         header = ctk.CTkFrame(self, corner_radius=16)
         header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=18, pady=(18, 12))
         header.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(header, text="InfoSec Ultrasonic Sender", font=("Segoe UI", 28, "bold")).grid(
+        ctk.CTkLabel(header, text="GhostWave Sender", font=("Segoe UI", 28, "bold")).grid(
             row=0, column=0, sticky="w", padx=18, pady=(16, 4)
         )
         ctk.CTkLabel(

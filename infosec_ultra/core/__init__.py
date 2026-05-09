@@ -1,2 +1,1 @@
-"""Core services for InfoSec Ultrasonic."""
-
+"""Core services for GhostWave."""

@@ -1,8 +1,8 @@
-# Academic Explanation of the InfoSec Ultrasonic Project
+# Academic Explanation of GhostWave: Secure Ultrasonic Message Transfer
 
 ## 1. General Introduction
 
-**InfoSec Ultrasonic Secure Message Transfer** is an educational desktop application that demonstrates how encrypted text messages or restricted local commands can be transferred between two devices using ultrasonic audio. The project is not intended to be a production-grade secure messenger. Instead, it is a practical proof of concept that combines several important topics in information security and software engineering:
+**GhostWave: Secure Ultrasonic Message Transfer** is an educational desktop application that demonstrates how encrypted text messages or restricted local commands can be transferred between two devices using ultrasonic audio. The project is not intended to be a production-grade secure messenger. Instead, it is a practical proof of concept that combines several important topics in information security and software engineering:
 
 - Communication over a non-traditional channel, specifically audio.
 - Asymmetric cryptography for session-key agreement.

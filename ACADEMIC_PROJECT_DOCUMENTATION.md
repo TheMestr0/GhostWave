@@ -1,8 +1,8 @@
-# InfoSec Ultrasonic Secure Message Transfer: Academic Project Documentation
+# GhostWave: Secure Ultrasonic Message Transfer - Academic Project Documentation
 
 ## Document Metadata
 
-**Project Title:** InfoSec Ultrasonic Secure Message Transfer  
+**Project Title:** GhostWave: Secure Ultrasonic Message Transfer  
 **Document Type:** Academic technical documentation  
 **Primary Domain:** Information security, applied cryptography, acoustic data transfer  
 **Implementation Language:** Python  
@@ -12,7 +12,7 @@
 
 ## Abstract
 
-This document presents an academic documentation of the InfoSec Ultrasonic Secure Message Transfer project. The project demonstrates how two nearby devices can exchange encrypted text messages or restricted commands over an acoustic channel using ultrasonic audio. The system combines audio-based data transfer, typed protocol framing, Reed-Solomon error correction, X25519 key agreement, HKDF-based key derivation, and authenticated symmetric encryption. The work is intended as an educational proof of concept rather than a production secure messenger. It highlights the engineering and security challenges involved in building a secure protocol over an unreliable, low-bandwidth, and noisy communication channel.
+This document presents an academic documentation of GhostWave: Secure Ultrasonic Message Transfer. The project demonstrates how two nearby devices can exchange encrypted text messages or restricted commands over an acoustic channel using ultrasonic audio. The system combines audio-based data transfer, typed protocol framing, Reed-Solomon error correction, X25519 key agreement, HKDF-based key derivation, and authenticated symmetric encryption. The work is intended as an educational proof of concept rather than a production secure messenger. It highlights the engineering and security challenges involved in building a secure protocol over an unreliable, low-bandwidth, and noisy communication channel.
 
 ## Keywords
 
@@ -20,7 +20,7 @@ Ultrasonic communication, acoustic data transfer, secure messaging, X25519, HKDF
 
 ## 1. Introduction
 
-Conventional secure messaging systems usually depend on network transports such as Wi-Fi, Ethernet, cellular networks, or Bluetooth. The InfoSec Ultrasonic project explores a different communication model: transferring data through sound. In this model, the speaker of one device acts as the transmitter and the microphone of another device acts as the receiver.
+Conventional secure messaging systems usually depend on network transports such as Wi-Fi, Ethernet, cellular networks, or Bluetooth. GhostWave explores a different communication model: transferring data through sound. In this model, the speaker of one device acts as the transmitter and the microphone of another device acts as the receiver.
 
 The project is built around a simple but meaningful security question: how can a system protect message confidentiality and integrity when the underlying communication medium is weak, noisy, and not designed for reliable digital transport?
 
@@ -324,7 +324,7 @@ Future improvements could include:
 
 ## 15. Conclusion
 
-The InfoSec Ultrasonic Secure Message Transfer project demonstrates how secure communication concepts can be applied over an unconventional and unreliable transport channel. By combining acoustic data transfer, protocol framing, error correction, key agreement, key derivation, and authenticated encryption, the project shows how layered security design can compensate for weaknesses in the underlying channel.
+GhostWave: Secure Ultrasonic Message Transfer demonstrates how secure communication concepts can be applied over an unconventional and unreliable transport channel. By combining acoustic data transfer, protocol framing, error correction, key agreement, key derivation, and authenticated encryption, the project shows how layered security design can compensate for weaknesses in the underlying channel.
 
 The project is academically useful because it makes several abstract security concepts visible in a working system. It shows that confidentiality does not come from the transport medium, but from cryptographic design. It also shows that real-world systems must handle packet loss, decoding artifacts, key mismatch, and unsafe command behavior explicitly.
 

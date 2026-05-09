@@ -12,7 +12,7 @@ _VERSION = "v1.1"
 class LauncherWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("InfoSec Ultrasonic — Launcher")
+        self.title("GhostWave — Launcher")
         self.geometry("540x420")
         self.minsize(480, 380)
         self.resizable(False, False)
@@ -31,7 +31,7 @@ class LauncherWindow(ctk.CTk):
         title_row = ctk.CTkFrame(header, fg_color="transparent")
         title_row.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 4))
         title_row.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(title_row, text="InfoSec Ultrasonic", font=("Segoe UI", 28, "bold")).grid(
+        ctk.CTkLabel(title_row, text="GhostWave", font=("Segoe UI", 28, "bold")).grid(
             row=0, column=0, sticky="w"
         )
         ctk.CTkLabel(
@@ -47,7 +47,7 @@ class LauncherWindow(ctk.CTk):
 
         ctk.CTkLabel(
             header,
-            text="Encrypted message transfer over ultrasonic audio.",
+            text="Secure ultrasonic message transfer.",
             text_color="#b7c1d1",
         ).grid(row=1, column=0, sticky="w", padx=20, pady=(0, 20))
 
